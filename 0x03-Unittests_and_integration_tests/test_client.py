@@ -76,11 +76,10 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "other_license"}}, "my_license", False),
         ({}, "my_license", False),  # Test case for missing license
     ])
-
     def test_has_license(self,
-            repo: Dict[str, Any],
-            license_key: str,
-            expected: bool) -> None:
+                         repo: Dict[str, Any],
+                         license_key: str,
+                         expected: bool) -> None:
         """Test that has_license returns correct boolean"""
         test_client = GithubOrgClient("test_org")
         self.assertEqual(
