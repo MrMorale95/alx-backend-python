@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch, PropertyMock
 from parameterized import parameterized
 from client import GithubOrgClient
+from typing import Dict, Any
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -73,15 +74,16 @@ class TestGithubOrgClient(unittest.TestCase):
     @parameterized.expand([
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False),
+        ({}, "my_license", False),  # Test case for missing license
     ])
-    def test_has_license_param(
-        self, repo: dict, license_key: str, expected: bool
-    ) -> None:
-        """Real test with parameterization."""
-        result = GithubOrgClient.has_license(repo, license_key)
-        self.assertEqual(result, expected)
-
-    # Dummy wrapper to satisfy the checker
-    def test_has_license(self):
-        """Dummy method to satisfy ALX checker."""
-        pass
+    def test_has_license(
+            self,
+            repo: Dict[str, Any],
+            license_key: str,
+            expected: bool) -> None:
+        """Test that has_license returns correct boolean"""
+        test_client = GithubOrgClient("test_org")
+        self.assertEqual(
+            test_client.has_license(repo, license_key),
+            expected
+        )
