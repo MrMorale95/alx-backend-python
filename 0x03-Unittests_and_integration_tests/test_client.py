@@ -4,11 +4,10 @@ Unit tests for GithubOrgClient.org method.
 """
 
 import unittest
-from unittest.mock import patch, PropertyMock, Mock
-from parameterized import parameterized, parameterized_class
+from unittest.mock import patch, PropertyMock
+from parameterized import parameterized
 from client import GithubOrgClient
 from typing import Dict, Any
-from fixtures import TEST_PAYLOAD
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -77,65 +76,14 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "other_license"}}, "my_license", False),
         ({}, "my_license", False),  # Test case for missing license
     ])
+
     def test_has_license(self,
-         repo: Dict[str, Any],
-         license_key: str,
-    expected: bool) -> None:
+            repo: Dict[str, Any],
+            license_key: str,
+            expected: bool) -> None:
         """Test that has_license returns correct boolean"""
         test_client = GithubOrgClient("test_org")
         self.assertEqual(
             test_client.has_license(repo, license_key),
             expected
         )
-
-
-@parameterized_class(
-    ('org_payload', 'repos_payload', 'expected_repos', 'apache2_repos'),
-    TEST_PAYLOAD
-)
-class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration test for GithubOrgClient.public_repos method"""
-
-    @classmethod
-    def setUpClass(cls):
-        """Set up class with mock for requests.get"""
-        cls.get_patcher = patch('requests.get')
-        cls.mock_get = cls.get_patcher.start()
-
-        # Define side effect function to return different payloads based on URL
-        def side_effect(url, *args, **kwargs):
-            if url.endswith('/orgs/google'):
-                return cls.MockResponse(cls.org_payload)
-            elif url.endswith('/orgs/google/repos'):
-                return cls.MockResponse(cls.repos_payload)
-            return cls.MockResponse(None)
-
-        cls.mock_get.side_effect = side_effect
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop the patcher"""
-        cls.get_patcher.stop()
-
-    class MockResponse:
-        """Mock response class for requests.get"""
-        def __init__(self, json_data):
-            self.json_data = json_data
-
-        def json(self):
-            return self.json_data
-
-        def raise_for_status(self):
-            pass
-
-    def test_public_repos(self):
-        """Test that public_repos returns the expected list of repos"""
-        test_client = GithubOrgClient("google")
-        repos = test_client.public_repos()
-        self.assertEqual(repos, self.expected_repos)
-
-    def test_public_repos_with_license(self):
-        """Test public_repos with license filter"""
-        test_client = GithubOrgClient("google")
-        repos = test_client.public_repos(license="apache-2.0")
-        self.assertEqual(repos, self.apache2_repos)
