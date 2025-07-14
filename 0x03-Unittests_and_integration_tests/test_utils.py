@@ -23,16 +23,18 @@ class TestAccessNestedMap(unittest.TestCase):
                                nested_map: Dict,
                                path: Tuple,
                                expected: Any) -> None:
-        """Test access_nested_map returns correct value for given nested_map and path."""
+        """Test access_nested_map returns correct value."""
         self.assertEqual(access_nested_map(nested_map, path), expected)
 
     @parameterized.expand([
         ({}, ("a",)),
         ({"a": 1}, ("a", "b")),
     ])
-    def test_access_nested_map_exception(self,
-                                          nested_map: dict,
-                                          path: tuple) -> None:
+    def test_access_nested_map_exception(
+            self,
+            nested_map: dict,
+            path: tuple
+    ) -> None:
         """
         Test that access_nested_map raises a KeyError for invalid paths.
         """
@@ -60,6 +62,7 @@ class TestGetJson(unittest.TestCase):
             self.assertEqual(result, test_payload)
 
             mock_get.assert_called_once_with(test_url)
+
 
 class TestAccessNestedMap(unittest.TestCase):
     """Unit test class to test access_nested_map function behavior."""
