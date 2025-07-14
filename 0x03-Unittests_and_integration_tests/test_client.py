@@ -73,14 +73,11 @@ class TestGithubOrgClient(unittest.TestCase):
     @parameterized.expand([
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False),
-        ({}, "my_license", False),  # Optional: test missing license key
+        ({}, "my_license", False),  # optional edge case
     ])
     def test_has_license(
-        self,
-        repo: dict,
-        license_key: str,
-        expected: bool
+        self, repo: dict, license_key: str, expected: bool
     ) -> None:
-        """Test has_license returns True only when license key matches."""
+        """Test has_license returns correct result for various licenses."""
         result = GithubOrgClient.has_license(repo, license_key)
         self.assertEqual(result, expected)
