@@ -10,6 +10,7 @@ from parameterized import parameterized
 from utils import access_nested_map, get_json, memoize
 from unittest.mock import patch, Mock
 
+
 class TestAccessNestedMap(unittest.TestCase):
     """Unit test class to test access_nested_map function behavior."""
 
@@ -60,18 +61,6 @@ class TestGetJson(unittest.TestCase):
 
             mock_get.assert_called_once_with(test_url)
 
-#!/usr/bin/env python3
-"""
-This module contains unit tests for the functions in utils.py.
-"""
-
-import unittest
-from typing import Any, Dict, Tuple
-from parameterized import parameterized
-from unittest.mock import patch, Mock
-from utils import access_nested_map, get_json, memoize
-
-
 class TestAccessNestedMap(unittest.TestCase):
     """Unit test class to test access_nested_map function behavior."""
 
@@ -98,12 +87,9 @@ class TestAccessNestedMap(unittest.TestCase):
         nested_map: dict,
         path: tuple
     ) -> None:
-        """
-        Test that access_nested_map raises a KeyError for invalid paths.
-        """
+        """Test that access_nested_map raises a KeyError for invalid paths."""
         with self.assertRaises(KeyError) as cm:
             access_nested_map(nested_map, path)
-
         self.assertEqual(str(cm.exception), f"'{path[-1]}'")
 
 
@@ -130,9 +116,7 @@ class TestMemoize(unittest.TestCase):
     """Tests for the memoize decorator."""
 
     def test_memoize(self) -> None:
-        """
-        Test that memoize caches the result of a method.
-        """
+        """Test that memoize caches the result of a method."""
 
         class TestClass:
             """Sample class to test memoization."""
@@ -146,7 +130,11 @@ class TestMemoize(unittest.TestCase):
                 """Memoized method that calls a_method."""
                 return self.a_method()
 
-        with patch.object(TestClass, 'a_method', return_value=42) as mock_method:
+        with patch.object(
+            TestClass,
+            'a_method',
+            return_value=42
+        ) as mock_method:
             test_obj = TestClass()
             result1 = test_obj.a_property
             result2 = test_obj.a_property
