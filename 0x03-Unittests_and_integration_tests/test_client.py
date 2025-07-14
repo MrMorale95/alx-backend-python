@@ -127,7 +127,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
         def raise_for_status(self):
             pass
-        
+
     def test_public_repos(self):
         """Test that public_repos returns the expected list of repos"""
         test_client = GithubOrgClient("google")
