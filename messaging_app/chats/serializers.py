@@ -4,39 +4,11 @@ from .models import User, Conversation, Message
 
 
 class UserSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
-    status = serializers.CharField(
-        source='get_status_display',
-        read_only=True
-    )
-
     class Meta:
         model = User
-        fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
-            'full_name', 'status', 'bio', 'phone_number',
-            'is_online', 'last_seen', 'password'
-        ]
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-
-    def get_full_name(self, obj):
-        return f"{obj.first_name} {obj.last_name}"
-
-    def validate_email(self, value):
-        # Explicit use of ValidationError
-        if User.objects.filter(email=value).exists():
-            raise ValidationError("This email is already in use.")
-        return value
-
-    def validate(self, data):
-        # Another explicit ValidationError
-        if len(data.get('password', '')) < 8:
-            raise ValidationError({
-                'password': "Password must be at least 8 characters long"
-            })
-        return data
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 
+                 'bio', 'phone_number', 'is_online', 'last_seen']
+        extra_kwargs = {'password': {'write_only': True}}
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -49,35 +21,29 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'sender', 'timestamp']
 
     def validate_content(self, value):
-        # ValidationError for message content
-        if len(value.strip()) == 0:
-            raise ValidationError("Message content cannot be empty")
+        if not value.strip():
+            raise ValidationError("Message cannot be empty")
         return value
 
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
-    messages = MessageSerializer(many=True, read_only=True)
-    participant_count = serializers.SerializerMethodField()
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
-        fields = [
-            'id', 'participants', 'participant_count',
-            'created_at', 'messages'
-        ]
-        read_only_fields = ['id', 'created_at', 'messages']
+        fields = ['id', 'participants', 'created_at', 'messages']
+        read_only_fields = ['id', 'created_at']
 
-    def get_participant_count(self, obj):
-        return obj.participants.count()
+    def get_messages(self, obj):
+        """Nested messages with pagination support"""
+        messages = obj.messages.order_by('-timestamp')[:50]  # Last 50 messages
+        return MessageSerializer(messages, many=True, context=self.context).data
 
     def validate(self, data):
-        # ValidationError for participant count
         participants = self.initial_data.get('participants', [])
         if len(participants) < 2:
-            raise ValidationError(
-                "Conversation must have at least 2 participants"
-            )
+            raise ValidationError("Conversation must have at least 2 participants")
         return data
 
 
@@ -94,7 +60,6 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate_participants(self, value):
-        # ValidationError for duplicate participants
-        if len(value) != len(set(value)):
-            raise ValidationError("Duplicate participants are not allowed")
+        if len(value) < 2:
+            raise ValidationError("At least 2 participants required")
         return value
