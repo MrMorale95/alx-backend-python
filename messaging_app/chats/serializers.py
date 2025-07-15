@@ -1,15 +1,12 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from .models import User, Conversation, Message
-
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 
-                 'bio', 'phone_number', 'is_online', 'last_seen']
+                'bio', 'phone_number', 'is_online', 'last_seen']
         extra_kwargs = {'password': {'write_only': True}}
-
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
@@ -22,30 +19,25 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def validate_content(self, value):
         if not value.strip():
-            raise ValidationError("Message cannot be empty")
+            raise serializers.ValidationError("Message content cannot be empty")  # Explicit use
         return value
-
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
-    messages = serializers.SerializerMethodField()
+    messages = MessageSerializer(many=True, read_only=True)  # Nested messages
 
     class Meta:
         model = Conversation
         fields = ['id', 'participants', 'created_at', 'messages']
         read_only_fields = ['id', 'created_at']
 
-    def get_messages(self, obj):
-        """Nested messages with pagination support"""
-        messages = obj.messages.order_by('-timestamp')[:50]  # Last 50 messages
-        return MessageSerializer(messages, many=True, context=self.context).data
-
     def validate(self, data):
         participants = self.initial_data.get('participants', [])
         if len(participants) < 2:
-            raise ValidationError("Conversation must have at least 2 participants")
+            raise serializers.ValidationError(  # Explicit use
+                {"participants": "Conversation must have at least 2 participants"}
+            )
         return data
-
 
 class ConversationCreateSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(
@@ -61,5 +53,11 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 
     def validate_participants(self, value):
         if len(value) < 2:
-            raise ValidationError("At least 2 participants required")
+            raise serializers.ValidationError(  # Explicit use
+                "At least 2 participants required"
+            )
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError(  # Explicit use
+                "Duplicate participants not allowed"
+            )
         return value
