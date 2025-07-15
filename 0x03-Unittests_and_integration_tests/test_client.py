@@ -156,13 +156,27 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     def test_public_repos(self):
         """Test public_repos returns all repo names"""
-        client = GithubOrgClient("google")
-        self.assertEqual(client.public_repos(), self.expected_repos)
+        # Create an instance with GitHub as the org name
+        github_client = GithubOrgClient("google")
+
+        # Get the list of repositories
+        repos = github_client.public_repos()
+
+        # Check that the list of repositories is correct
+        self.assertEqual(repos, self.expected_repos)
+
+        # Verify that the mocked get was called
+        self.mock_get.assert_called()
 
     def test_public_repos_with_license(self):
-        """Test public_repos filters repos by license correctly"""
-        client = GithubOrgClient("google")
-        self.assertEqual(
-            client.public_repos(license="apache-2.0"),
-            self.apache2_repos
-        )
+        """Test the public_repos method with a license argument"""
+        github_client = GithubOrgClient("google")
+
+        # Get the list of repositories with apache-2.0 license
+        repos = github_client.public_repos(license="apache-2.0")
+
+        # Check that the list of repositories is correct
+        self.assertEqual(repos, self.apache2_repos)
+
+        # Verify that the mocked get was called
+        self.mock_get.assert_called()
