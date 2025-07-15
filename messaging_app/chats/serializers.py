@@ -26,8 +26,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'timestamp']
-        read_only_fields = ['id', 'sender', 'timestamp']
+        fields = ['id', 'sender', 'content', 'sent_at']
+        read_only_fields = ['id', 'sender', 'sent_at']
 
     def validate_content(self, value):
         if not value.strip():
@@ -35,26 +35,42 @@ class MessageSerializer(serializers.ModelSerializer):
         return value
 
 class ConversationSerializer(serializers.ModelSerializer):
+    # For writing (accept participant IDs)
+    participants_input = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.all(),
+        write_only=True,
+        source='participants'  # Maps to the participants field
+    )
+    
+    # For reading (show full user details)
     participants = UserSerializer(many=True, read_only=True)
-    messages = serializers.SerializerMethodField()  # Using SerializerMethodField for messages
-    participant_count = serializers.SerializerMethodField()  # Another example
+    
+    messages = serializers.SerializerMethodField()
+    participant_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
-        fields = ['id', 'participants', 'participant_count', 'created_at', 'messages']
+        fields = [
+            'id', 
+            'participants',          # Read-only (full user details)
+            'participants_input',    # Write-only (IDs)
+            'participant_count', 
+            'created_at', 
+            'messages'
+        ]
         read_only_fields = ['id', 'created_at']
 
     def get_messages(self, obj):
         """Custom method for nested messages with pagination"""
-        messages = obj.messages.order_by('-timestamp')[:50]  # Last 50 messages
+        messages = obj.messages.order_by('-sent_at')[:50]
         return MessageSerializer(messages, many=True, context=self.context).data
 
     def get_participant_count(self, obj):
-        """Another SerializerMethodField example"""
         return obj.participants.count()
 
     def validate(self, data):
-        participants = self.initial_data.get('participants', [])
+        participants = data.get('participants', [])
         if len(participants) < 2:
             raise serializers.ValidationError(
                 {"participants": "Conversation must have at least 2 participants"}
