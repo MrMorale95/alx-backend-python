@@ -10,6 +10,10 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     is_online = models.BooleanField(default=False)
     last_seen = models.DateTimeField(blank=True, null=True)
+    password = models.CharField(max_length=128)  # Password field
+    first_name = models.CharField(max_length=150, blank=True)  # First name
+    last_name = models.CharField(max_length=150, blank=True)  # Last name
+    
 
     def __str__(self):
         return self.username
@@ -29,7 +33,7 @@ class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     message_body = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"From {self.sender.username} in Conversation {self.conversation.id}"
