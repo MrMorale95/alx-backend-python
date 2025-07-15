@@ -1,68 +1,76 @@
 from rest_framework import serializers
 from .models import User, Conversation, Message
 
+# -------------------
+# User Serializer
+# -------------------
 class UserSerializer(serializers.ModelSerializer):
-    # Using SerializerMethodField for computed field
     full_name = serializers.SerializerMethodField()
-    status = serializers.CharField(
-        source='get_status_display',
-        read_only=True
-    )
+
+    id = serializers.UUIDField(source='user_id', read_only=True)  # Match model
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                'full_name', 'status', 'bio', 'phone_number',
-                'is_online', 'last_seen', 'password']
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'full_name', 'bio', 'phone_number',
+            'is_online', 'last_seen', 'password'
+        ]
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_full_name(self, obj):
-        """SerializerMethodField example implementation"""
-        return f"{obj.first_name} {obj.last_name}"
+        return f"{obj.first_name} {obj.last_name}".strip()
 
+# -------------------
+# Message Serializer
+# -------------------
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
-    content = serializers.CharField(max_length=1000)
+    id = serializers.UUIDField(source='message_id', read_only=True)
+    message_body = serializers.CharField(max_length=1000)
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'sent_at']
+        fields = ['id', 'sender', 'message_body', 'sent_at']
         read_only_fields = ['id', 'sender', 'sent_at']
 
-    def validate_content(self, value):
+    def validate_message_body(self, value):
         if not value.strip():
             raise serializers.ValidationError("Message content cannot be empty")
         return value
 
+# -------------------
+# Conversation Serializer (Read + Write)
+# -------------------
 class ConversationSerializer(serializers.ModelSerializer):
-    # For writing (accept participant IDs)
+    # Write: accept participant IDs
     participants_input = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.all(),
         write_only=True,
-        source='participants'  # Maps to the participants field
+        source='participants'
     )
-    
-    # For reading (show full user details)
+
+    # Read: show full participant details
     participants = UserSerializer(many=True, read_only=True)
-    
+
     messages = serializers.SerializerMethodField()
     participant_count = serializers.SerializerMethodField()
+    id = serializers.UUIDField(source='conversation_id', read_only=True)
 
     class Meta:
         model = Conversation
         fields = [
-            'id', 
-            'participants',          # Read-only (full user details)
-            'participants_input',    # Write-only (IDs)
-            'participant_count', 
-            'created_at', 
+            'id',
+            'participants',          # read-only
+            'participants_input',    # write-only
+            'participant_count',
+            'created_at',
             'messages'
         ]
         read_only_fields = ['id', 'created_at']
 
     def get_messages(self, obj):
-        """Custom method for nested messages with pagination"""
         messages = obj.messages.order_by('-sent_at')[:50]
         return MessageSerializer(messages, many=True, context=self.context).data
 
@@ -77,12 +85,16 @@ class ConversationSerializer(serializers.ModelSerializer):
             )
         return data
 
+# -------------------
+# Conversation Create Serializer (Write-Only Simplified)
+# -------------------
 class ConversationCreateSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.all(),
         write_only=True
     )
+    id = serializers.UUIDField(source='conversation_id', read_only=True)
 
     class Meta:
         model = Conversation
