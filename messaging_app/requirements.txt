@@ -1,0 +1,12 @@
+# Django core
+django>=4.2
+# Django REST Framework
+djangorestframework>=3.14.0
+# CORS headers middleware
+django-cors-headers>=4.3.1
+# Celery for asynchronous tasks
+celery>=5.3.6
+# drf-yasg for API documentation
+drf-yasg>=1.21.7
+django-environ>=0.11.2
+psycopg2
