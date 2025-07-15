@@ -127,3 +127,16 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
         def raise_for_status(self):
             pass
+
+    def test_public_repos(self):
+        """Test public_repos returns all repo names"""
+        client = GithubOrgClient("google")
+        self.assertEqual(client.public_repos(), self.expected_repos)
+
+    def test_public_repos_with_license(self):
+        """Test public_repos filters repos by license correctly"""
+        client = GithubOrgClient("google")
+        self.assertEqual(
+            client.public_repos(license="apache-2.0"),
+            self.apache2_repos
+        )
