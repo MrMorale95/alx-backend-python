@@ -3,10 +3,25 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import MessageFilter, ConversationFilter
-from .models import Conversation, Message
-from .serializers import ConversationSerializer, ConversationCreateSerializer, MessageSerializer
+from .models import Conversation, Message, User
+from .serializers import ConversationSerializer, ConversationCreateSerializer, MessageSerializer, UserSerializer
 from .permissions import IsParticipantOfConversation  # import the new permission
+from django.contrib.auth.hashers import make_password
+from rest_framework import generics
+from rest_framework.permissions import AllowAny
 
+class UserCreateView(generics.CreateAPIView):
+    """
+    API endpoint to create a new user.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        # Ensure password is hashed
+        password = serializer.validated_data.get('password')
+        serializer.save(password=make_password(password))
 
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()

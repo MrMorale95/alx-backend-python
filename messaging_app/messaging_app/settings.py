@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import environ
+# from rest_framework_simplejwt.settings import api_settings as jwt_api_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, 'db_creds.env'))
 
 # SECURITY WARNING: don’t run with debug turned on in production!
-DEBUG = env('DEBUG')
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,7 +38,7 @@ SECRET_KEY = 'django-insecure-*t!1fg%q-3f3jsnob)o*d$ke=+t*v0o**q!9zy+y%hpa9(kulm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -166,3 +167,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'chats.User'
+SIMPLE_JWT = {
+    'USER_ID_FIELD': 'user_id',  # Use your UUIDField name here
+}
