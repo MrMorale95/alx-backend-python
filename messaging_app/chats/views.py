@@ -10,6 +10,7 @@ from .serializers import (
     ConversationCreateSerializer,
     MessageSerializer
 )
+from .permissions import IsParticipantOfConversation  # Import custom permission
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -17,13 +18,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
     ViewSet to list, retrieve, and create conversations.
     """
     queryset = Conversation.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
     filter_backends = [DjangoFilterBackend]
     filterset_class = ConversationFilter
 
     def get_queryset(self):
-        # Only show conversations the authenticated user is a participant of
-        return self.queryset.filter(participants=self.request.user)
+        # Return conversations where the logged-in user is a participant
+        return Conversation.objects.filter(participants=self.request.user).distinct()
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -71,11 +72,15 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
     ViewSet to list messages from conversations the user is part of.
     """
     serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
     filter_backends = [DjangoFilterBackend]
     filterset_class = MessageFilter
 
     def get_queryset(self):
-        return Message.objects.filter(
-            conversation__participants=self.request.user
-        ).order_by('-sent_at')
+        conversation_pk = self.kwargs['conversation_pk']
+        # Confirm that the user is a participant in the conversation
+        if not Conversation.objects.filter(pk=conversation_pk, participants=self.request.user).exists():
+            return Message.objects.none()  # no access
+
+        # Return messages only for this conversation
+        return Message.objects.filter(conversation_id=conversation_pk)

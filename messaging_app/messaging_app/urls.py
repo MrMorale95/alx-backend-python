@@ -18,9 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.views.generic.base import RedirectView
 from rest_framework.authtoken.views import obtain_auth_token
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('chats.urls')),  # Mount your app's API here
     path('api-auth/', include('rest_framework.urls')),  # Optional: browsable login
+
+        # JWT token routes:
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # obtain token
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

@@ -107,3 +107,4 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         if len(value) != len(set(value)):
             raise serializers.ValidationError("Duplicate participants not allowed")
         return value
+    
