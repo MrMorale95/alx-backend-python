@@ -125,3 +125,29 @@ class OffensiveLanguageMiddleware:
             "Too many messages sent. Please wait before sending more.",
             status=429
         )    
+    
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Skip permission check for these paths
+        if request.path in ['/login/', '/admin/', '/static/']:
+            return self.get_response(request)
+            
+        # Check if user has required role
+        if not self.has_permission(request):
+            return HttpResponseForbidden(
+                "Access Denied: You don't have permission to access this resource",
+                status=403
+            )
+        
+        return self.get_response(request)
+
+    def has_permission(self, request):
+        """Check if user is admin or moderator"""
+        if not request.user.is_authenticated:
+            return False
+            
+        # Assuming you have 'is_moderator' field or similar in your User model
+        return request.user.is_staff or request.user.is_moderator    
