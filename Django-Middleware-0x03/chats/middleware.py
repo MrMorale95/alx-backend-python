@@ -4,6 +4,8 @@ import logging
 import os
 from django.conf import settings
 from django.http import HttpResponseForbidden
+from django.core.cache import cache
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -54,3 +56,44 @@ class RestrictAccessByTimeMiddleware:
                 )
         
         return self.get_response(request)
+    
+
+class RateLimitMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Configuration
+        self.limit = 5  # 5 messages
+        self.window = 60  # 60 seconds = 1 minute
+
+    def __call__(self, request):
+        # Only process POST requests to message endpoints
+        if request.method == 'POST' and any(path in request.path for path in ['/chat/', '/message/']):
+            ip_address = self.get_client_ip(request)
+            cache_key = f'rate_limit_{ip_address}'
+            
+            # Get current count
+            current_count = cache.get(cache_key, 0)
+            
+            if current_count >= self.limit:
+                return HttpResponseForbidden(
+                    "Message limit exceeded. Please wait before sending more messages.",
+                    status=429
+                )
+            
+            # Increment count
+            cache.set(
+                cache_key,
+                current_count + 1,
+                self.window  # Automatically expires after window
+            )
+        
+        return self.get_response(request)
+
+    def get_client_ip(self, request):
+        """Get the client's IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip    
