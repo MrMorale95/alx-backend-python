@@ -58,42 +58,70 @@ class RestrictAccessByTimeMiddleware:
         return self.get_response(request)
     
 
-class RateLimitMiddleware:
+class OffensiveLanguageMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-        # Configuration
-        self.limit = 5  # 5 messages
-        self.window = 60  # 60 seconds = 1 minute
+        # Rate limit configuration
+        self.RATE_LIMIT = 5  # 5 messages
+        self.TIME_WINDOW = 60  # 60 seconds (1 minute)
+        self.BLOCK_DURATION = 300  # 5 minutes block if limit exceeded
 
     def __call__(self, request):
-        # Only process POST requests to message endpoints
-        if request.method == 'POST' and any(path in request.path for path in ['/chat/', '/message/']):
+        # Only check POST requests to messaging endpoints
+        if request.method == 'POST' and self.is_messaging_endpoint(request.path):
             ip_address = self.get_client_ip(request)
-            cache_key = f'rate_limit_{ip_address}'
             
-            # Get current count
-            current_count = cache.get(cache_key, 0)
-            
-            if current_count >= self.limit:
-                return HttpResponseForbidden(
-                    "Message limit exceeded. Please wait before sending more messages.",
-                    status=429
-                )
-            
-            # Increment count
-            cache.set(
-                cache_key,
-                current_count + 1,
-                self.window  # Automatically expires after window
-            )
+            # Check if IP is temporarily blocked
+            if self.is_ip_blocked(ip_address):
+                return self.too_many_requests_response()
+                
+            # Track message count
+            if not self.allow_request(ip_address):
+                # Block IP for exceeding rate limit
+                self.block_ip(ip_address)
+                return self.too_many_requests_response()
         
         return self.get_response(request)
 
     def get_client_ip(self, request):
-        """Get the client's IP address"""
+        """Extract client IP address from request"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip    
+        return x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+
+    def is_messaging_endpoint(self, path):
+        """Check if request is to a messaging endpoint"""
+        return any(p in path for p in ['/send/', '/message/', '/chat/'])
+
+    def allow_request(self, ip_address):
+        """Check if request is within rate limits"""
+        cache_key = f'message_count_{ip_address}'
+        current_count = cache.get(cache_key, 0)
+        
+        if current_count >= self.RATE_LIMIT:
+            return False
+            
+        cache.set(
+            cache_key,
+            current_count + 1,
+            self.TIME_WINDOW
+        )
+        return True
+
+    def is_ip_blocked(self, ip_address):
+        """Check if IP is temporarily blocked"""
+        return cache.get(f'blocked_{ip_address}', False)
+
+    def block_ip(self, ip_address):
+        """Block IP for exceeding rate limit"""
+        cache.set(
+            f'blocked_{ip_address}',
+            True,
+            self.BLOCK_DURATION
+        )
+
+    def too_many_requests_response(self):
+        """Return 429 Too Many Requests response"""
+        return HttpResponseForbidden(
+            "Too many messages sent. Please wait before sending more.",
+            status=429
+        )    
