@@ -10,7 +10,7 @@ class RequestLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         
-        self.log_file = os.path.join(settings.BASE_DIR, 'chats', 'requests.log')
+        self.log_file = os.path.join(settings.BASE_DIR, 'requests.log')
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
     
     def __call__(self, request):
