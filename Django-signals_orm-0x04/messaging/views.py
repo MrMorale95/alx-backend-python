@@ -32,7 +32,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         """
         request = self.request
         if request.query_params.get("unread") == "true":
-            return Message.unread.for_user(request.user)  # uses .only() internally
+            return Message.unread.unread_for_user(request.user)  # matches required call
         return Message.objects.filter(
             sender=request.user.id,
             parent_message__isnull=True
