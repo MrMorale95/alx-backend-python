@@ -1,6 +1,5 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status
-
 from .models import User, Message, Notification, MessageHistory
 from .serializers import (
     UserSerializer,
@@ -9,8 +8,10 @@ from .serializers import (
     MessageHistorySerializer,
     RecursiveMessageSerializer
 )
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 
-
+@method_decorator(cache_page(60), name='list')
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
