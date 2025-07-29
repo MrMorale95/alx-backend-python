@@ -9,29 +9,11 @@ from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
 from .pagination import StandardResultsSetPagination
 from .filters import MessageFilter
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 
+@method_decorator(cache_page(60), name='list')
 class ConversationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing Conversation instances.
-
-    This class provides standard CRUD functionality for the 'Conversation' model using
-    Django REST Framework's ModelViewSet. It ensures that only authenticated users
-    who are participants of a conversation can access it and perform relevant actions.
-
-    Attributes:
-        queryset: Queryset to fetch all conversations ordered by the creation date.
-        serializer_class: Defines the serializer used for data serialization and deserialization.
-        permission_classes: List of permissions applied to this ViewSet, ensuring user-specific
-            access and participatory authorization.
-
-    Methods:
-        get_queryset():
-            Implements custom queryset restriction to return only conversations
-            the current user participates in.
-        perform_create(serializer):
-            Saves a new conversation instance and adds the authenticated user
-            to its participants.
-    """
     queryset = Conversation.objects.all().order_by('-created_at')
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
