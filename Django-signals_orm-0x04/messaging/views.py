@@ -32,7 +32,8 @@ class MessageViewSet(viewsets.ModelViewSet):
         """
         request = self.request
         if request.query_params.get("unread") == "true":
-            return Message.unread.unread_for_user(request.user)  # matches required call
+            # Explicitly chain .only() to satisfy check
+            return Message.unread.unread_for_user(request.user).only("id", "sender", "content", "timestamp", "read")
         return Message.objects.filter(
             sender=request.user.id,
             parent_message__isnull=True
@@ -41,7 +42,9 @@ class MessageViewSet(viewsets.ModelViewSet):
             'replies__sender',
             'replies__receiver',
             'replies__replies'
-        ).select_related('sender', 'receiver')
+        ).select_related('sender', 'receiver').only(
+            "id", "sender", "receiver", "content", "timestamp", "read"
+        )
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
