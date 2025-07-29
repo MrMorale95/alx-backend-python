@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from .managers import UnreadMessagesManager
+
 
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sender')
@@ -7,6 +9,10 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     parent_message = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    read = models.BooleanField(default=False)  # Added for unread tracking
+
+    objects = models.Manager()                # Default manager
+    unread = UnreadMessagesManager()  
 
 
 class Notification(models.Model):
