@@ -6,6 +6,7 @@ from rest_framework import viewsets, status
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -29,14 +30,17 @@ class MessageViewSet(viewsets.ModelViewSet):
         ).select_related('sender', 'receiver')
 
 class NotificationViewSet(viewsets.ModelViewSet):
+
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
 
 class MessageHistoryViewSet(viewsets.ModelViewSet):
+
     queryset = MessageHistory.objects.all()
     serializer_class = MessageHistorySerializer
 
 def delete_user(request, pk):
+
     user = User.objects.get(pk=pk)
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
