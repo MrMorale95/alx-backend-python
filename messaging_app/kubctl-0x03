@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DEPLOYMENT="messaging-app-blue"
+NAMESPACE="default" # change if you use a different namespace
+APP_URL="http://localhost:8000" # Adjust if needed, use port-forward or real ingress IP
+
+# Start port-forward in background (optional, if app not externally accessible)
+kubectl port-forward deployment/$DEPLOYMENT 8000:8000 &
+PF_PID=$!
+
+sleep 5
+
+# Apply the updated deployment to trigger rolling update
+kubectl apply -f messaging_app/blue_deployment.yaml
+
+# Monitor rollout status
+kubectl rollout status deployment/$DEPLOYMENT
+
+# Function to test app availability continuously for 30 seconds
+test_downtime() {
+  echo "Testing app availability for 30 seconds..."
+  SECONDS=0
+  while [ $SECONDS -lt 30 ]; do
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $APP_URL)
+    TIMESTAMP=$(date +"%T")
+    if [[ "$HTTP_STATUS" == "200" ]]; then
+      echo "$TIMESTAMP - App is UP (HTTP $HTTP_STATUS)"
+    else
+      echo "$TIMESTAMP - WARNING! App DOWN or unavailable (HTTP $HTTP_STATUS)"
+    fi
+    sleep 2
+  done
+}
+
+test_downtime
+
+# Show current pods and their status
+kubectl get pods -l app=messaging-app,version=blue
+
+# Kill port-forward
+kill $PF_PID
