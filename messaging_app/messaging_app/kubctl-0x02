@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Apply blue deployment and service (start routing to blue)
+kubectl apply -f messaging_app/blue_deployment.yaml
+kubectl apply -f messaging_app/kubeservice.yaml
+
+# Wait for blue pods to be ready
+echo "Waiting for blue pods to be ready..."
+kubectl rollout status deployment/messaging-app-blue
+
+# Apply green deployment (new version alongside blue)
+kubectl apply -f messaging_app/green_deployment.yaml
+
+# Wait for green pods to be ready
+echo "Waiting for green pods to be ready..."
+kubectl rollout status deployment/messaging-app-green
+
+# Check logs for green pods to find errors
+echo "Checking logs for green deployment pods..."
+GREEN_PODS=$(kubectl get pods -l app=messaging-app,version=green -o jsonpath='{.items[*].metadata.name}')
+for pod in $GREEN_PODS; do
+  echo "Logs for pod $pod:"
+  kubectl logs "$pod"
+done
+
+echo "To switch traffic to green, update the Service selector:"
+echo "kubectl patch service messaging-app-service -p '{\"spec\": {\"selector\": {\"app\": \"messaging-app\", \"version\": \"green\"}}}'"
+
