@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Scale deployment replicas to 3
+kubectl scale deployment messaging-app --replicas=3
+
+# Wait a bit for pods to be created
+sleep 10
+
+# Verify pods are running
+kubectl get pods
+
+# Perform load testing on the app using wrk
+# Assuming the app is exposed on minikube IP at port 8000 internally.
+# You might want to forward the port or get the service IP.
+# Here’s a port-forward example (in background):
+kubectl port-forward svc/messaging-app-service 8000:8000 &
+PF_PID=$!
+sleep 5
+
+echo "Running wrk load test for 15 seconds..."
+wrk -t2 -c100 -d15s http://localhost:8000/
+
+# Stop port forwarding
+kill $PF_PID
+
+# Monitor resource usage
+kubectl top pods
