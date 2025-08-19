@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds')  // add these in Jenkins credentials
+        DOCKER_IMAGE = "your-dockerhub-username/messaging_app"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -25,6 +30,23 @@ pipeline {
             post {
                 always {
                     junit 'report.xml'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t $DOCKER_IMAGE:latest -f messaging_app/Dockerfile ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    sh "echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin"
+                    sh "docker push $DOCKER_IMAGE:latest"
                 }
             }
         }
