@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    tools {
+        python 'Python3'  // configure Python under Manage Jenkins > Global Tool Configuration
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/alx-backend-python/messaging_app.git'
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                sh 'python3 -m venv venv'
+                sh '. venv/bin/activate && pip install --upgrade pip pytest'
+                sh '. venv/bin/activate && pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh '. venv/bin/activate && pytest --junitxml=report.xml'
+            }
+            post {
+                always {
+                    junit 'report.xml'   // publish test results
+                }
+            }
+        }
+    }
+
+    triggers {
+        // manual trigger only (no automatic SCM or cron triggers here)
+    }
+}
