@@ -47,7 +47,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r messaging_app/requirements.txt
+          pip install flake8 pytest-cov
 
+      - name: Run flake8 Linting
+        run: |
+          flake8 messaging_app/
+      
       - name: Wait for MySQL to be ready
         run: |
           sudo apt-get install -y mysql-client
@@ -57,9 +62,14 @@ jobs:
           done
 
       - name: Run Django Migrations
-        run: |
-          python manage.py migrate
+        run: python manage.py migrate
 
-      - name: Run Tests
+      - name: Run Tests with Coverage
         run: |
-          python manage.py test
+          pytest --cov=messaging_app --cov-report=xml --junitxml=report.xml
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.xml
